@@ -1,0 +1,6 @@
+# Fase atual (spec-002): coletor + harness
+playwright
+pytest
+
+# Fases seguintes (spec-003/004) — descomente quando chegar a hora
+# python-telegram-bot

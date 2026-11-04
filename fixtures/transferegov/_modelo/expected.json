@@ -1,0 +1,14 @@
+{
+  "_comentario": "Modelo. Copie esta pasta para fixtures/transferegov/<caso>/, ponha o snapshot.json (ou snapshot.html) ao lado e preencha os valores esperados. Chaves iniciadas por _ são ignoradas.",
+  "codigo_origem": null,
+  "titulo": null,
+  "orgao_emissor": null,
+  "url_origem": null,
+  "data_inicio_inscricao": null,
+  "data_fim_inscricao": null,
+  "ufs_elegiveis": null,
+  "proponentes_elegiveis": null,
+  "areas_atuacao": null,
+  "texto_bruto": null,
+  "status_edital": null
+}

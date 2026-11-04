@@ -1,0 +1,83 @@
+eu pensei numa ferramenta que buscasse editais ou outras oportunidades na área da cultura/direitos humanos/assistenci social/outros a definir, mas preciso entender como essa ferramenta poderia ajudar produtores culturais, captadores de recursos e outros profissionais. qual a demanda por esse tipo de ferramenta, quanto eu poderia cobrar, preciso de uma pesquisa de mercado. voce pode me ajudar com isso?
+
+
+Uma ferramenta de curadoria e alerta de editais (Cultura, Direitos Humanos, Assistência Social, Fomento Público e Fundos Privados) resolve uma das **maiores dores operacionais** de quem trabalha com captação de recursos e gestão de projetos no Brasil.
+
+---
+
+## 1. A Dor Real do Mercado (O Problema do Usuário)
+
+Profissionais de captação (proponentes, pareceristas, ONGs, coletivos e produtores) enfrentam três gargalos diários:
+
+1. **Pulverização de Fontes:** Editais estão espalhados em Diários Oficiais (União, Estados, Municípios), portais como Transferegov, blogs de ONGs/Fundações privadas, sites do Sesc/Sesi/Sebrae, e perfis de redes sociais.
+2. **Janelas Curtas de Inscrição:** Múltiplos editais abrem com prazos de 15 a 30 dias. Se o profissional descobre o edital 5 dias antes do encerramento, não há tempo hábil para montar o projeto orçamentário, certidões e portfólio.
+3. **Leitura Exaustiva de Regulamentos:** Editais possuem dezenas de páginas de burocracia. O profissional perde horas lendo regras para descobrir, no final, que a sua entidade/região não cumpre os critérios de elegibilidade.
+
+---
+
+## 2. Como a Ferramenta Agrega Valor (A Solução)
+
+Sua ferramenta passa a ser indispensável quando ela faz o papel de um **"radar inteligente"**:
+
+* **Filtro Direcionado e Elegibilidade:** Em vez de receber centenas de links irrelevantes, o usuário define o perfil (ex: *Pessoa Física, Zona Leste de SP, Coletivo sem CNPJ, Linguagem: Teatro / Artes Visuais*). A ferramenta entrega apenas oportunidades onde o proponente é elegível.
+* **Resumos Estruturados:** Extração via IA/código das informações críticas de cada edital:
+* *Quem pode se inscrever* (PF, PJ sem fins lucrativos, MEI)
+* *Valor máximo financiado*
+* *Prazo final e link direto para o formulário*
+* *Mecanismo* (Verba direta, Lei de Incentivo/Rouanet/ProAC/PNAB)
+
+
+* **Alertas de Prazos Cruciais:** Envio de lembretes via Telegram/E-mail (ex: *"Faltam 10 dias para o edital X fechar"*).
+
+---
+
+## 3. Pesquisa de Mercado e Perfil dos Clientes
+
+| Perfil de Cliente | Necessidade Principal | Disposição para Pagar |
+| --- | --- | --- |
+| **Captadores e Produtores Autônomos** | Não perder prazos e economizar tempo de pesquisa diária. | R$ 29 a R$ 69 / mês |
+| **Pequenas ONGs e Coletivos Culturais** | Descobrir verbas diretas sem depender de complexidade de leis de incentivo. | R$ 49 a R$ 99 / mês |
+| **Empresas de Consultoria / Grandes OSCs** | Monitoramento amplo (Federal, Estadual, Internacional, ESG). | R$ 199 a R$ 499 / mês |
+
+---
+
+## 4. Modelos de Precificação Recomendados
+
+Para garantir adesão inicial mantendo uma arquitetura técnica simples (Python/Telegram/Streamlit), adote o modelo **Freemium com Assinatura em Camadas**:
+
+### Plano Gratuito (Isca de Atração)
+
+* Acesso a um canal/bot público no Telegram com **resumo semanal de 3 a 5 editais nacionais de grande porte** (ex: PNAB, Rouanet, Editais federais).
+
+### Plano Pro (Foco no Captador / Produtor) — R$ 39 a R$ 59 / mês
+
+* Bot individual/Web app com alertas em tempo real.
+* Filtros avançados por **região, linguagem cultural, faixa de valor e tipo de proponente (PF/PJ/Coletivo)**.
+* Resumo automático das exigências do edital (via integração simples com IA).
+
+### Plano Equipes / Agências — R$ 149 a R$ 299 / mês
+
+* Exportação dos editais em planilha (CSV/Excel) para gestão interna do captador.
+* Monitoramento de Diários Oficiais específicos por palavra-chave.
+
+---
+
+## 5. Viabilidade Técnica com Ferramentas Leves
+
+Com OpenCode e um computador modesto, essa arquitetura é altamente viável:
+
+1. **Coleta de Dados:** Scripts em Python (`requests` e `BeautifulSoup` ou `Playwright` rodando de forma agendada) monitorando os principais portais (Transferegov, Secretarias Estaduais de Cultura, portais de ONGs).
+2. **Processamento:** Uso de modelos leves ou chamadas pontuais de API de linguagem para resumir o PDF/página do edital nas 5 variáveis fundamentais.
+3. **Entrega ao Usuário:**
+* Painel em **Streamlit** (hospedado gratuitamente no Streamlit Community Cloud) para busca e filtro na web.
+* Bot do **Telegram** em Python para envio imediato das notificações e alertas de vencimento.
+
+
+
+---
+
+Gostaria de detalhar a estrutura do script em Python para fazer a varredura (scraping) de um site de editais de exemplo ou prefere desenhar a interface do painel em Streamlit?
+
+* Criar script de web scraping simples para portais de editais
+* Estruturar o banco de dados e schema para classificação dos editais
+* Definir fluxo de pagamento automático via Pix no bot do Telegram
