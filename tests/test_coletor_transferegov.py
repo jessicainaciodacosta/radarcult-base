@@ -120,12 +120,40 @@ def test_erros_em_sequencia_abortam_o_ciclo(conn, servidor):
 def test_paginacao_le_todas_as_paginas(conn, servidor):
     r = _rodar(conn, servidor, pagesize=1)
     assert r.listados == 3 and r.listagem_completa and r.inseridos == 2
-    assert r.paginas_lidas == 4  # 3 páginas com itens + a 4ª (vazia), que encerra a leitura
+    assert r.paginas_lidas == 3  # para ao atingir totalResults, sem pedir página extra
+
+
+def test_paginacao_usa_os_nomes_que_o_portal_real_usa(conn, servidor):
+    """Regressão (05/11/2026): `currentPage` com P maiúsculo é ignorado pelo portal; o certo é
+    `pagesize`/`currentpage` em minúsculas, na URL e no corpo, como a própria página faz."""
+    _rodar(conn, servidor, pagesize=1)
+    assert [q.get("currentpage") for q, _ in servidor.estado.listagens] == ["1", "2", "3"]
+    for query, corpo in servidor.estado.listagens:
+        assert query["pagesize"] == "1" and corpo["pagesize"] == 1
+        assert corpo["currentpage"] == int(query["currentpage"])
+        assert "currentPage" not in corpo and "currentPage" not in query
+
+
+def test_pagina_repetida_antes_do_total_aborta_sem_marcar_completo(conn, servidor):
+    """Regressão: antes, página repetida virava 'listagem completa' (viu 10 de 92 sem avisar)."""
+    servidor.estado.ignora_paginacao = True
+    r = _rodar(conn, servidor, pagesize=1)
+    assert r.abortado and "paginação não avançou" in r.abortado
+    assert r.listagem_completa is False and r.codigo_saida() == 2
+    assert _contar(conn) == 0
+
+
+def test_total_maior_que_o_lido_deixa_a_listagem_incompleta(conn, servidor):
+    servidor.estado.total_informado = 92  # o portal diz ter 92, mas só 3 foram lidos
+    r = _rodar(conn, servidor, pagesize=1, max_paginas=3)
+    assert r.listados == 3 and r.listagem_completa is False and r.codigo_saida() == 1
+    assert r.total_informado == 92
 
 
 def test_max_paginas_deixa_a_listagem_incompleta(conn, servidor):
     r = _rodar(conn, servidor, pagesize=1, max_paginas=1)
     assert r.listados == 1 and r.listagem_completa is False and r.codigo_saida() == 1
+    assert r.total_informado == 3
 
 
 def test_todos_inclui_programas_encerrados(conn, servidor):

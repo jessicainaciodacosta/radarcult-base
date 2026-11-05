@@ -46,7 +46,10 @@ HOME = "/ep-atos-prep-web/home"
 PAGINA_DETALHE = "/ep-atos-prep-web/consultar-programa/{id}"
 API = "/ep/api/atos-prep"
 API_SEG = "/ep/api/seguranca"
-CAMPOS_LISTAGEM = "id,codigo,nome,ano,situacao,unidade,recebendoProposta"
+# Campos pedidos na listagem (a própria página do portal pede estes, capturado em 05/11/2026).
+CAMPOS_LISTAGEM = ("id,codigo,nome,ano,situacao,unidade(id,tipo,nome,descricaoPadrao,situacao,codigoSiorg),"
+                   "recebendoProposta,recebimentoPropostaNaoIniciado,recebimentoPropostaConcluido,"
+                   "isPropostaViaSistemaExterno")
 _CONTADOR = {"inserido": "inseridos", "atualizado": "atualizados", "inalterado": "inalterados"}
 
 
@@ -62,8 +65,8 @@ class ErroItem(Exception):
 class Config:
     base_url: str = BASE_PADRAO
     user_agent: str = "RadarCult/0.1 (coleta pessoal de editais; baixa frequência)"
-    pagesize: int = 50
-    max_paginas: int = 10
+    pagesize: int = 10   # o portal real lista 10 por página (observado); não sei se aceita mais
+    max_paginas: int = 20
     apenas_recebendo: bool = True
     interceptar: bool = True
     respeitar_robots: bool = True
@@ -87,6 +90,7 @@ class Resumo:
     interceptados: int = 0
     via_fallback: int = 0
     listagem_completa: bool = False
+    total_informado: int | None = None   # `pagina.totalResults` do portal; base do 'completo'
     erros: list = field(default_factory=list)
     abortado: str | None = None
 
@@ -192,25 +196,45 @@ async def preparar_sessao(page, cfg: Config) -> None:
 
 
 async def listar_programas(page, cfg: Config, resumo: Resumo) -> tuple[list[dict], bool]:
-    """Lê a listagem paginada. Devolve (entidades, completa). `completa` só é True quando
-    uma página vem vazia/repetida; atingir `max_paginas` deixa False."""
+    """Lê a listagem paginada. Devolve (entidades, completa).
+
+    O portal pagina com `pagesize` e `currentpage` (minúsculas, 1-based) na URL E no corpo,
+    como a própria página faz (capturado em 05/11/2026; `currentPage` é ignorado). A resposta
+    traz `pagina.totalResults`. `completa` só é True quando o total de itens distintos lidos
+    alcança `totalResults` (ou, sem esse campo, quando uma página vem vazia). Página repetida
+    antes de atingir o total é ERRO: o ciclo aborta (antes virava 'completo' sem aviso).
+    """
     vistos: dict = {}
     for pagina in range(1, cfg.max_paginas + 1):
-        corpo = {"pagesize": cfg.pagesize, "currentPage": pagina, "fields": CAMPOS_LISTAGEM}
+        corpo = {"pagesize": cfg.pagesize, "currentpage": pagina, "idUnidade": None,
+                 "idParametrizacaoEsteira": None, "fields": CAMPOS_LISTAGEM}
+        caminho = f"{API}/programa/listarComFiltro?pagesize={cfg.pagesize}&currentpage={pagina}"
         try:
-            dados = await _chamar(page, cfg, "POST", f"{API}/programa/listarComFiltro", corpo)
+            dados = await _chamar(page, cfg, "POST", caminho, corpo)
         except ErroItem as exc:
             raise AbortarCiclo(f"listagem, página {pagina}: {exc}") from exc
         if not isinstance(dados, dict) or not isinstance(dados.get("entidades"), list):
             raise AbortarCiclo("formato da listagem inesperado (esperado {'entidades': [...]}); o portal pode ter mudado")
         resumo.paginas_lidas += 1
-        novos = [e for e in dados["entidades"] if isinstance(e, dict) and e.get("id") not in vistos]
-        if not novos:
-            return list(vistos.values()), True
+        info = dados.get("pagina")
+        total = info.get("totalResults") if isinstance(info, dict) else None
+        if isinstance(total, int):
+            resumo.total_informado = total
+        itens = [e for e in dados["entidades"] if isinstance(e, dict)]
+        novos = [e for e in itens if e.get("id") not in vistos]
         for e in novos:
             vistos[e["id"]] = e
+        if resumo.total_informado is not None and len(vistos) >= resumo.total_informado:
+            return list(vistos.values()), True
+        if not novos:
+            if not itens and resumo.total_informado is None:
+                return list(vistos.values()), True  # sem totalResults: página vazia encerra
+            raise AbortarCiclo(
+                f"paginação não avançou na página {pagina} (itens repetidos ou página vazia) com "
+                f"{len(vistos)} de {resumo.total_informado} programas lidos; o portal pode ter mudado")
         await asyncio.sleep(cfg.pausa_s)
-    return list(vistos.values()), False
+    completa = resumo.total_informado is not None and len(vistos) >= resumo.total_informado
+    return list(vistos.values()), completa
 
 
 def _eh_detalhe(url: str, prog_id) -> bool:

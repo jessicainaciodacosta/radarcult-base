@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import threading
+from urllib.parse import parse_qs, urlparse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 CAMPOS_LISTAGEM = ("id", "codigo", "nome", "ano", "situacao", "unidade", "recebendoProposta")
@@ -23,6 +24,9 @@ class Estado:
         self.pagina_sem_api = False         # página de detalhe NÃO chama a API (força o fallback)
         self.token = "tok-simulado-123"
         self.requisicoes: list = []         # (metodo, caminho, tinha_token_valido)
+        self.ignora_paginacao = False       # sempre devolve a 1ª página (o defeito real visto em 05/11/2026)
+        self.total_informado = None         # força totalResults (ex.: maior que o real)
+        self.listagens: list = []           # (query, corpo) de cada POST na listagem
 
 
 class _Handler(BaseHTTPRequestHandler):
@@ -87,9 +91,20 @@ class _Handler(BaseHTTPRequestHandler):
             return self._enviar(e.listagem_status, {"erro": "simulado"})
         if e.listagem_vazia:
             return self._enviar(200, {"entidades": []})
-        tam, pag = int(corpo.get("pagesize", 10)), int(corpo.get("currentPage", 1))
+        # Comportamento OBSERVADO no portal real (05/11/2026, capturado da própria página):
+        # a paginação usa `pagesize` e `currentpage` em MINÚSCULAS (1-based), na URL e no corpo;
+        # `currentPage` (P maiúsculo) é ignorado. A resposta traz o bloco `pagina`
+        # {currentPage (0-based), pageSize, totalResults}.
+        query = {k: v[0] for k, v in parse_qs(urlparse(self.path).query).items()}
+        e.listagens.append((query, corpo))
+        tam = int(query.get("pagesize") or corpo.get("pagesize") or 10)
+        pag = int(query.get("currentpage") or corpo.get("currentpage") or 1)
+        if e.ignora_paginacao:
+            pag = 1
         todos = [{k: d.get(k) for k in CAMPOS_LISTAGEM} for d in e.programas.values()]
-        return self._enviar(200, {"entidades": todos[(pag - 1) * tam: pag * tam]})
+        total = e.total_informado if e.total_informado is not None else len(todos)
+        return self._enviar(200, {"entidades": todos[(pag - 1) * tam: pag * tam], "mensagens": [],
+                                  "pagina": {"currentPage": pag - 1, "pageSize": tam, "totalResults": total}})
 
 
 class ServidorFalso:
