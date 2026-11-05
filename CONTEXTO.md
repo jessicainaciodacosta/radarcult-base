@@ -112,7 +112,7 @@ Ainda abertos (decisão do dono ou dado que falta):
 
 ```
 RadarCult/
-├── CONTEXTO.md  RadarCult.txt  .gitignore  .env.example  requirements.txt  pytest.ini
+├── CONTEXTO.md  RadarCult.txt  .gitignore  .env.example  pyproject.toml  pytest.ini
 ├── docs/specs/   spec-000, spec-001 (spec-002 aprovada: copiar)      docs/spike/spike-001-fontes.md
 ├── migrations/   001_initial_schema.sql (original, não editar)  002_status_em_breve.sql
 ├── radarcult/
@@ -132,7 +132,7 @@ RadarCult/
 
 ```
 python -m venv venv && source venv/Scripts/activate
-pip install -r requirements.txt
+pip install -r pyproject.toml
 playwright install chromium
 pytest
 ```
